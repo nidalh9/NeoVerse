@@ -3,6 +3,19 @@ import os
 import argparse
 import numpy as np
 from torchvision.transforms import functional as F
+
+# Monkey-patch torch.cuda.mem_get_info to handle unindexed "cuda" device (PyTorch 2.3.x compat)
+_orig_mem_get_info = torch.cuda.mem_get_info
+def _patched_mem_get_info(device=None):
+    if device is None:
+        device = 0
+    elif isinstance(device, str) and device == "cuda":
+        device = 0
+    elif isinstance(device, torch.device) and device.index is None:
+        device = 0
+    return _orig_mem_get_info(device)
+torch.cuda.mem_get_info = _patched_mem_get_info
+
 from diffsynth.pipelines.wan_video_neoverse import WanVideoNeoVersePipeline
 from diffsynth import save_video
 from diffsynth.utils.auxiliary import CameraTrajectory, load_video, homo_matrix_inverse
